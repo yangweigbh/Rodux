@@ -6,7 +6,7 @@ import android.util.Log;
  * Created by yangwei on 2017/11/15.
  */
 
-public class LoggerImpl<A, S> implements ActionLogger<A>, StateLogger<S> {
+public class LoggerImpl<A, S> implements Logger<A, S> {
     private static final String TAG = "LoggerImpl";
 
     @Override

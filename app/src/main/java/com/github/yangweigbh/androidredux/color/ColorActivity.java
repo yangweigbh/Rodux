@@ -7,12 +7,12 @@ import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.TextView;
 
-import com.github.yangweigbh.androidredux.LogSideEffect;
-import com.github.yangweigbh.androidredux.LogStateHandler;
+import com.github.yangweigbh.androidredux.LogMiddleware;
 import com.github.yangweigbh.androidredux.LoggerImpl;
 import com.github.yangweigbh.androidredux.R;
 import com.github.yangweigbh.androidredux.Store;
 
+import java.util.Arrays;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -26,12 +26,12 @@ public class ColorActivity extends AppCompatActivity implements ColorContract.Vi
         setContentView(R.layout.activity_main);
 
         LoggerImpl<ColorAction, ColorState> logger = new LoggerImpl<>();
-        Store<ColorAction, ColorState> store = new Store<>(Executors.newFixedThreadPool(1), ColorState.empty(), new ColorReducer());
-        store.addSideEffect(new ColorSideEffect(store, Executors.newFixedThreadPool(1)));
 
-        Executor loggerExecutor = Executors.newFixedThreadPool(1);
-        store.addSideEffect(new LogSideEffect<>(loggerExecutor, logger));
-        store.addStateHandler(new LogStateHandler<>(loggerExecutor, logger));
+        LogMiddleware<ColorAction, ColorState> logMiddleware = new LogMiddleware<>(logger);
+        ColorMiddleware colorMiddleware = new ColorMiddleware();
+
+        Store<ColorAction, ColorState> store = new Store<>(Executors.newFixedThreadPool(1),
+                ColorState.empty(), new ColorReducer(), Arrays.asList(logMiddleware, colorMiddleware));
 
         new ColorPresenter(store, this, new MainThreadExecutor());
 

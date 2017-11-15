@@ -1,5 +1,8 @@
 package com.github.yangweigbh.androidredux;
 
+import android.util.Log;
+
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -11,18 +14,26 @@ import java.util.concurrent.Executor;
 
 public class Store<A, S> {
     private final Reducer<A, S> mReducer;
-    private List<SideEffect<A>> mSideEffects = Collections.synchronizedList(new LinkedList<SideEffect<A>>());
     private List<StateHandler<S>> mStateHanlders = Collections.synchronizedList(new LinkedList<StateHandler<S>>());
     private Executor mStoreExecutor;
     private S mState;
+    private List<Middleware> mMiddlewares = new ArrayList<>();
 
-    public Store(Executor storeExecutor, S initState, Reducer<A, S> reducer) {
+    public Store(Executor storeExecutor, S initState, Reducer<A, S> reducer, List<Middleware> customMiddlewares) {
         if (initState == null) throw new NullPointerException("initState can not be null");
         if (reducer == null) throw new NullPointerException("reducer can not be null");
 
         mStoreExecutor = storeExecutor;
         mState = initState;
         mReducer = reducer;
+
+        mMiddlewares.add(new NotifySubscribersMiddleware());
+
+        if (customMiddlewares != null && customMiddlewares.size() > 0) {
+            mMiddlewares.addAll(customMiddlewares);
+        }
+
+        mMiddlewares.add(new CallReducerMiddleware());
     }
 
     public void dispatch(final A action) {
@@ -39,27 +50,11 @@ public class Store<A, S> {
     }
 
     private void handle(A action) {
-        mState = reduce(action, mState);
-        dispatchState(mState);
-        dispatchActionToSideEffects(action);
-    }
-
-    private void dispatchActionToSideEffects(A action) {
-        for (SideEffect<A> sideEffect: mSideEffects) {
-            sideEffect.onNext(action);
-        }
+        new MiddlewareChain<>(this, 0, action).proceed(action);
     }
 
     private S reduce(A action, S currentState) {
         return mReducer.reduce(action, currentState);
-    }
-
-    public void addSideEffect(SideEffect sideEffect) {
-        mSideEffects.add(sideEffect);
-    }
-
-    public void removeSideEffect(SideEffect sideEffect) {
-        mSideEffects.remove(sideEffect);
     }
 
     public void addStateHandler(StateHandler stateHandler) {
@@ -77,6 +72,28 @@ public class Store<A, S> {
     private void dispatchState(S state) {
         for (StateHandler<S> stateHandler: mStateHanlders) {
             stateHandler.onNext(state);
+        }
+    }
+
+    public List<Middleware> getMiddleware() {
+        return mMiddlewares;
+    }
+
+    private class CallReducerMiddleware implements Middleware<A, S> {
+
+        @Override
+        public void intercept(Chain<A, S> chain) {
+            mState = reduce(chain.getAction(), mState);
+        }
+    }
+
+    private class NotifySubscribersMiddleware implements Middleware<A, S> {
+
+        @Override
+        public void intercept(Chain<A, S> chain) {
+            chain.proceed(chain.getAction());
+
+            dispatchState(chain.getState());
         }
     }
 }
