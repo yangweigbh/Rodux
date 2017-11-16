@@ -25,7 +25,9 @@ public class Store<A, S> {
         if (initState == null) throw new NullPointerException("initState can not be null");
         if (reducer == null) throw new NullPointerException("reducer can not be null");
 
-        mStoreExecutor = new SerialExecutor(storeExecutor);
+        if (storeExecutor != null) {
+            mStoreExecutor = new SerialExecutor(storeExecutor);
+        }
         mState = initState;
         mReducer = reducer;
 
@@ -77,7 +79,7 @@ public class Store<A, S> {
         }
     }
 
-    public List<Middleware> getMiddleware() {
+    List<Middleware> getMiddlewares() {
         return mMiddlewares;
     }
 

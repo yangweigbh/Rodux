@@ -20,7 +20,7 @@ public class MiddlewareChain<A, S> implements Middleware.Chain<A, S> {
 
     @Override
     public void proceed(A action) {
-        List<Middleware> middlewares = mStore.getMiddleware();
+        List<Middleware> middlewares = mStore.getMiddlewares();
 
         if (mIndex >= middlewares.size()) {
             throw new AssertionError();
