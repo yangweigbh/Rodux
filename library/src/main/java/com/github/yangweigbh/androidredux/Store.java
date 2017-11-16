@@ -1,11 +1,13 @@
 package com.github.yangweigbh.androidredux;
 
+import android.support.annotation.NonNull;
 import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.Executor;
 
 /**
@@ -23,7 +25,7 @@ public class Store<A, S> {
         if (initState == null) throw new NullPointerException("initState can not be null");
         if (reducer == null) throw new NullPointerException("reducer can not be null");
 
-        mStoreExecutor = storeExecutor;
+        mStoreExecutor = new SerialExecutor(storeExecutor);
         mState = initState;
         mReducer = reducer;
 
@@ -94,6 +96,41 @@ public class Store<A, S> {
             chain.proceed(chain.getAction());
 
             dispatchState(chain.getState());
+        }
+    }
+
+    private static class SerialExecutor implements Executor {
+        private Queue<Runnable> queue = new LinkedList<>();
+
+        private final Executor mExecutor;
+        private Runnable mActive;
+
+        public SerialExecutor(Executor wrapped) {
+            mExecutor = wrapped;
+        }
+
+        @Override
+        public synchronized void execute(@NonNull final Runnable runnable) {
+            queue.offer(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        runnable.run();
+                    } finally {
+                        scheduleNext();
+                    }
+                }
+            });
+
+            if (mActive == null) {
+                scheduleNext();
+            }
+        }
+
+        private void scheduleNext() {
+            while ((mActive = queue.poll()) != null) {
+                mExecutor.execute(mActive);
+            }
         }
     }
 }
