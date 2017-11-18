@@ -25,7 +25,6 @@ public class ColorMiddleware implements Middleware<ColorAction,ColorState> {
 
     @Override
     public void intercept(Chain<ColorAction, ColorState> chain) {
-        Log.d("YangWei", "ColorMiddleware intercept");
         if (chain.getAction() instanceof ColorAction.ChangeColorAction) {
             Runnable runnable = () -> {
                 //simulate network request
