@@ -4,6 +4,8 @@
 
 [![](https://jitpack.io/v/yangweigbh/AndroidRedux.svg)](https://jitpack.io/#yangweigbh/AndroidRedux)
 
+![Alt](https://repobeats.axiom.co/api/embed/d427178a99216bca1ec64f1d0d4b4c4627671eb3.svg "Repobeats analytics image")
+
 ## Setup:
 
 add it in your root `build.gradle`
